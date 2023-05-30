@@ -1,11 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="2ee0d82b-1fa8-4754-9951-8b3b722a3297" name="Changes" comment="Modificación para excluir un paquete del namespace de las clases">
-      <change beforePath="$PROJECT_DIR$/.idea/.gitignore" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/Savne-StarUml-PhpGenerator.iml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/modules.xml" beforeDir="false" />
-    </list>
+    <list default="true" id="2ee0d82b-1fa8-4754-9951-8b3b722a3297" name="Changes" comment="Modificación para excluir un paquete del namespace de las clases" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -37,7 +33,7 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1685488433219</updated>
-      <workItem from="1685488434496" duration="115000" />
+      <workItem from="1685488434496" duration="136000" />
     </task>
     <task id="LOCAL-00001" summary="MOdificación para excluir un paquete del namespace de las clases">
       <created>1685488519417</created>
