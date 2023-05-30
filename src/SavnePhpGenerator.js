@@ -39,19 +39,19 @@ class SavnePhpGenerator {
                 },
                 "savne.phpGenerator.indentSpaces": {
                     text: "Indent Spaces",
-                    description: "Number of spaces for indentation.",
+                    description: "Number of spaces for indentation",
                     type: "number",
                     default: 4
                 },
                 "savne.phpGenerator.typeConstruct": {
                     text: "Dependency injection type",
-                    description: "Specifies the type of dependency injection to use in the class.",
+                    description: "Specifies the type of dependency injection to use in the class",
                     type: "dropdown",
                     default: 'PARAMETERS-CONSTRUCTOR',
                     options: [
-                        {value: 'PARAMETERS-CONSTRUCTOR', text: 'Constructor parameters.'},
-                        {value: 'BODY-CONSTRUCTOR', text: "Constructor body."},
-                        {value: 'NO', text: 'Not inject.'},
+                        {value: 'PARAMETERS-CONSTRUCTOR', text: 'Constructor parameters'},
+                        {value: 'BODY-CONSTRUCTOR', text: "Constructor body"},
+                        {value: 'NO', text: 'Not inject'},
                     ],
                 },
                 "savne.phpGenerator.useSpecification": {
