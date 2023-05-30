@@ -95,8 +95,7 @@ class SavnePhpGenerator {
     getPackage() {
         const self= this;
         app.elementPickerDialog.showDialog(
-            "Select route to process, once you choose the route, " +
-            "the generator will look for all the classes present to generate the php code",
+            "Select root package",
             null,
             type.UMLPackage
         ).then(function ({buttonId, returnValue}) {
@@ -126,6 +125,7 @@ class SavnePhpGenerator {
         this.classes.forEach(class_ => {
             this.resolvePath(class_);
         });
+        console.log(this.directoryClasses);
     }
 
     resolvePath(class_) {
@@ -134,7 +134,8 @@ class SavnePhpGenerator {
         while (parent._id !== this.containerMain._parent._id){
             let directoryPath= this.directoryClasses.findPathByParent_id(parent._id);
             if(directoryPath === undefined) {
-                path.push(parent.name);
+                if(parent.visibility !== "private") path.push(parent.name);
+
                 parent = parent._parent;
             }else{
                 path.push(directoryPath.path);
