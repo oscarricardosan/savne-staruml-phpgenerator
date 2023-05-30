@@ -9,8 +9,6 @@ class SavnePhpGenerator {
         this.classes= [];
         this.containerMain= undefined;
 
-        this.directoryClasses= DirectoryClasses.new();
-
         Object.defineProperty(String.prototype, 'decapitalizeFirstLetter', {
             value: function() {
                 return this.charAt(0).toLowerCase() + this.slice(1);
@@ -89,6 +87,7 @@ class SavnePhpGenerator {
     }
 
     generateCodeFromPackage() {
+        this.directoryClasses= DirectoryClasses.new();
         this.getPackage();
     }
 
@@ -125,7 +124,6 @@ class SavnePhpGenerator {
         this.classes.forEach(class_ => {
             this.resolvePath(class_);
         });
-        console.log(this.directoryClasses);
     }
 
     resolvePath(class_) {
@@ -181,6 +179,7 @@ class SavnePhpGenerator {
     }
 
     generateCodeFromClass() {
+        this.directoryClasses= DirectoryClasses.new();
         this.getClass();
     }
 
@@ -212,6 +211,7 @@ class SavnePhpGenerator {
     }
 
     generateCodeFromInterface() {
+        this.directoryClasses= DirectoryClasses.new();
         this.getInterface();
     }
 
