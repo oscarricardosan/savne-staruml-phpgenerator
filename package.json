@@ -1,7 +1,7 @@
 {
   "name": "savne-phpgenerator",
-  "title": "SavnePhpGenerator",
-  "description": "Extension that allows the generation of php code from uml class diagrams.",
+  "title": "Savne-PhpGenerator",
+  "description": "Extension that allows the generation of php code from starUML.",
   "homepage": "https://savne.net",
   "version": "1.0.0",
   "keywords": ["savne", "php"],
