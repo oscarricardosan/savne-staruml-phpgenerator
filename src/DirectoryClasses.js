@@ -13,17 +13,9 @@ class DirectoryClasses {
     }
 
     findPathByParent_id(parent_id){
-        let path= this.directoryClasses.find(path => {
+        return this.directoryClasses.find(path => {
             return path.parent_id === parent_id;
         });
-        if(path === undefined)
-            return {
-                path: ['/'],
-                parent_id: undefined,
-                str_path: '/ROOT'
-            };
-
-        return path;
     }
 
     getDirectory(parent_id){

@@ -185,14 +185,27 @@ class SavnePhpGenerator {
 
     getClass() {
         const self= this;
+
         app.elementPickerDialog.showDialog(
-            "Select the class to process, once you choose the class, generate the php code",
+            "Select root package",
             null,
-            type.UMLClass
+            type.UMLPackage
         ).then(function ({buttonId, returnValue}) {
             if (buttonId === 'ok') {
-                let class_= returnValue
-                self.exportClass(class_);
+                self.containerMain= returnValue
+                app.elementPickerDialog.showDialog(
+                    "Select the class to process, once you choose the class, generate the php code",
+                    null,
+                    type.UMLClass
+                ).then(function ({buttonId, returnValue}) {
+                    if (buttonId === 'ok') {
+                        let class_= returnValue
+                        self.mapClasses(self.containerMain);
+                        self.determineRoutes();
+                        self.classes= [class_];
+                        self.exportClass(class_);
+                    }
+                });
             }
         });
     }
@@ -203,16 +216,31 @@ class SavnePhpGenerator {
 
     getInterface() {
         const self= this;
+
         app.elementPickerDialog.showDialog(
-            "Select the interface to process, once you choose the interface, generate the php code",
+            "Select root package",
             null,
-            type.UMLInterface
+            type.UMLPackage
         ).then(function ({buttonId, returnValue}) {
             if (buttonId === 'ok') {
-                let interface_= returnValue
-                self.exportClass(interface_);
+                self.containerMain= returnValue
+
+                app.elementPickerDialog.showDialog(
+                    "Select the interface to process, once you choose the interface, generate the php code",
+                    null,
+                    type.UMLInterface
+                ).then(function ({buttonId, returnValue}) {
+                    if (buttonId === 'ok') {
+                        let interface_= returnValue
+                        self.mapClasses(self.containerMain);
+                        self.determineRoutes();
+                        self.classes= [interface_];
+                        self.exportClass(interface_);
+                    }
+                });
             }
         });
+
     }
 
     exportClass(class_){
