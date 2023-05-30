@@ -1,0 +1,17 @@
+{
+  "name": "savne-phpgenerator",
+  "title": "SavnePhpGenerator",
+  "description": "Extension that allows the generation of php code from uml class diagrams.",
+  "homepage": "https://savne.net",
+  "version": "1.0.0",
+  "keywords": ["savne", "php"],
+  "author": {
+    "name": "Oscar Sanchez",
+    "email": "oscar.sanchez@savne.net",
+    "url": "https://github.com/oscarricardosan"
+  },
+  "license": "MIT",
+  "engines": {
+    "staruml": ">=3.0.0"
+  }
+}

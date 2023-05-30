@@ -1,0 +1,31 @@
+[
+  {
+    "label": "BMPN",
+    "id": "tool-group-1",
+    "diagram-types": [ "UMLClassDiagram" ],
+    "items": [
+      {
+        "label": "Actor",
+        "id": "tool-item-1",
+        "icon": "icon-Savne",
+        "rubberband": "rect",
+        "command": "savne-phpgenerator:show-message",
+        "command-arg": {
+          "id": "UMLClass",
+          "stereotype": "my-stereotype"
+        }
+      },
+      {
+        "label": "Actor2",
+        "id": "tool-item-2",
+        "icon": "icon-Savne",
+        "rubberband": "rect",
+        "command": "savne-phpgenerator:show-message",
+        "command-arg": {
+          "id": "UMLClass",
+          "stereotype": "my-stereotype"
+        }
+      }
+    ]
+  }
+]
