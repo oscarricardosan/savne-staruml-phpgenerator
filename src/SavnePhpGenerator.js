@@ -147,7 +147,8 @@ class SavnePhpGenerator {
 
     exportFiles(){
         let path_destination = app.dialogs.showOpenDialog(
-            'Select the folder where your php files will be exported'
+            'Select the folder where your php files will be exported', null, null,
+            {properties: ['openFile', 'openDirectory']}
         );
         if(path_destination === undefined)return false;
         path_destination= path_destination[0];
@@ -246,7 +247,8 @@ class SavnePhpGenerator {
 
     exportClass(class_){
         let path_destination = app.dialogs.showOpenDialog(
-            'Select the folder where your php files will be exported'
+            'Select the folder where your php files will be exported', null, null,
+            {properties: ['openFile', 'openDirectory']}
         );
         if(path_destination === undefined)return false;
         path_destination= path_destination[0];

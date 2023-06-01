@@ -8,7 +8,8 @@ class DirectoryClasses {
         this.directoryClasses.push({
             path: path,
             parent_id: parent_._id,
-            str_path: path.reverse().join('/')
+            str_path: path.reverse().join('/'),
+            namespace_path: path.join('\\')
         })
     }
 

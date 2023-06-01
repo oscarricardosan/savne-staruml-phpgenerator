@@ -13,6 +13,7 @@ class FileClass {
         this.construct_body= [];
         this.properties= [];
         this.interface_implement= '';
+        this.comment_class= '';
         this.extends= '';
         this.construct_string= '';
 
@@ -50,19 +51,23 @@ class FileClass {
 
     addUse(class_target){
         let path= this.directoryClasses.findPathByParent_id(class_target._parent._id);
-        this.uses.push('use '+path.str_path+'/'+class_target.name);
+
+        if(class_target._parent._id !== this.class_._parent._id)
+            this.uses.push('use '+path.namespace_path+'\\'+class_target.name+';');
     }
 
     getContent() {
         let path= this.directoryClasses.findPathByParent_id(this.class_._parent._id);
 
         this.resolveImplement();
+        this.resolveAssociations();
         this.resolveExtends();
         if(!this.isInterface) this.resolveConstruct();
         this.resolveProperties();
         this.resolveMethods();
+        this.resolveCommentClass();
 
-        let use_= this.uses.unique().join(';\n');
+        let use_= this.uses.unique().join('\n');
         let methods= this.methods.join('\n\n\n');
         let properties= this.properties.join('\n\n');
 
@@ -70,14 +75,22 @@ class FileClass {
         if(this.isAbstractClass) type_class='abstract class';
         if(this.isInterface) type_class='interface';
         return '<?php\n\n' +
-            'namespace '+path.str_path+';\n\n\n' +
+            'namespace '+path.namespace_path+';\n\n\n' +
             (use_ !== ''?use_+'\n\n\n':'') +
+            this.comment_class+
             type_class+' '+this.class_.name + this.interface_implement + this.extends + '\n' +
             '{\n\n' +
             (properties !== ''?properties+'\n\n\n':'') +
             this.construct_string+
             methods+
             '\n\n}' ;
+    }
+
+    resolveAssociations(){
+        let associations= this.filterOwnedElement(type.UMLAssociation);
+        associations.forEach(association=> {
+            this.addUse(association.end2.reference);
+        });
     }
 
     resolveImplement(){
@@ -102,13 +115,20 @@ class FileClass {
         let dependency_relations= this.filterOwnedElement(type.UMLDependency);
         dependency_relations.forEach(dependency_relation=> {
             let dependency= dependency_relation.target;
+
+            if(dependency.constructor.name === type.UMLPackage.name) return;
             this.addUse(dependency);
+
+            let nameVar= dependency.name.decapitalizeFirstLetter();
+            nameVar= nameVar.replace('RepositoryInterface', 'Repo');
+            nameVar= nameVar.replace('Interface', '');
+
             if(this.typeConstruct === 'PARAMETERS-CONSTRUCTOR') {
-                this.construct_parameters.push(this.tab(2) + 'protected ' + dependency.name + ' $' + dependency.name.decapitalizeFirstLetter());
+                this.construct_parameters.push(this.tab(2) + 'protected ' + dependency.name + ' $' + nameVar);
             }else if(this.typeConstruct === 'BODY-CONSTRUCTOR') {
-                this.construct_parameters.push(this.tab(2) + dependency.name + ' $' + dependency.name.decapitalizeFirstLetter());
-                this.construct_body.push(this.tab(2) + 'this->' + dependency.name.decapitalizeFirstLetter() + '= $' + dependency.name.decapitalizeFirstLetter());
-                this.properties.push(this.tab() + 'protected' + dependency.name + ' $' + dependency.name.decapitalizeFirstLetter()+';');
+                this.construct_parameters.push(this.tab(2) + dependency.name + ' $' + nameVar);
+                this.construct_body.push(this.tab(2) + 'this->' + nameVar + '= $' + nameVar+';');
+                this.properties.push(this.tab() + 'protected ' + dependency.name + ' $' + nameVar+';');
             }
         });
 
@@ -118,23 +138,23 @@ class FileClass {
         if(__construct !== undefined) {
             __construct.parameters.forEach(parameter => {
                 if (parameter.direction === 'in') {
-                    this.construct_parameters.push(this.tab(2)+this.resolveParameter(parameter));
+                    this.construct_parameters.push(
+                        this.tab(2)+
+                        (parameter.visibility !== 'public'?parameter.visibility+' ':'')+
+                        this.resolveParameter(parameter)
+                    );
                 }
             });
         }
         if(__construct !== undefined ){
             this.construct_body.push(this.formatCodeMethod(__construct));
-        }else{
-            if(this.construct_body.length > 0)
-                this.construct_body.push('\n\n'+this.tab(2)+this.todo+'\n');
-            else
-                this.construct_body.push(this.tab(2)+this.todo+'\n');
         }
 
-        let construct_body= this.construct_body.join('\n');
         let construct_parameters= this.construct_parameters.join(',\n');
+        let construct_body= this.construct_body.join('\n');
 
 
+        if(construct_body === '' && construct_parameters === '') return '';
 
         this.construct_string+= this.tab()+'public function __construct('+
         (
@@ -144,6 +164,7 @@ class FileClass {
         ) +
         this.tab()+'{\n'+
         (construct_body !== ''?construct_body:'') +
+        '\n'+
         this.tab()+'}\n\n\n' ;
 
     }
@@ -203,15 +224,17 @@ class FileClass {
 
     resolveParameter(parameter, adduse){
         adduse= adduse === undefined?true:adduse;
-        let type= parameter.type;
-        if(typeof(type) === 'object') {
-            if(adduse) this.addUse(parameter.type);
-            type= parameter.type.name;
+        let typeParameter= parameter.type;
+        if(typeParameter.constructor.name === type.UMLDataType.name) {
+            typeParameter = typeParameter.name;
+        }else if(typeof(typeParameter) === 'object') {
+            if(adduse) this.addUse(typeParameter);
+            typeParameter= typeParameter.name;
         }
         let default_value= parameter.defaultValue !== ''?'= '+parameter.defaultValue:'';
 
         if(parameter.multiplicity === '*' || parameter.multiplicity === '1..*' || parameter.multiplicity === '0..*') {
-            type= 'array';
+            typeParameter= 'array';
             if(parameter.multiplicity === '0..*') {
                 default_value = '= []';
             }
@@ -221,36 +244,55 @@ class FileClass {
                 default_value = '= null';
             }
         }
-        if(parameter.multiplicity === '0..1') {
-            type= '?'+type;
+        if(parameter.multiplicity === '0..1' && typeParameter !== '') {
+            typeParameter= '?'+typeParameter;
         }
 
-        return (type!==''?type+' ':'') + '$' + parameter.name+default_value;
+        return (typeParameter!==''?typeParameter+' ':'') + '$' + parameter.name+default_value;
     }
 
 
-    resolveParameterToProperty(parameter, adduse){
+    resolveParameterToProperty(property, adduse){
         adduse= adduse === undefined?true:adduse;
-        let type= parameter.type;
-        if(typeof(type) === 'object') {
-            if(adduse) this.addUse(parameter.type);
-            type= parameter.type.name;
+        let typeProperty= property.type;
+        if(typeProperty.constructor.name === type.UMLDataType.name) {
+            typeProperty = typeProperty.name;
+        }else if(typeof(typeProperty) === 'object') {
+            if(adduse) this.addUse(typeProperty);
+            typeProperty= typeProperty.name;
         }
 
-        if(parameter.multiplicity === '*' || parameter.multiplicity === '1..*' || parameter.multiplicity === '0..*') {
-            type= 'array';
+        if(property.multiplicity === '*' || property.multiplicity === '1..*' || property.multiplicity === '0..*') {
+            typeProperty= 'array';
         }
-        return (type!==''?type+' ':'') + '$' + parameter.name;
+        return (typeProperty!==''?typeProperty+' ':'') + '$' + property.name;
     }
 
-    resolveReturn(parameter, adduse){
+    resolveReturn(return_, adduse){
         adduse= adduse === undefined?true:adduse;
-        let type= parameter.type;
-        if(typeof(type) === 'object') {
-            if(adduse) this.addUse(parameter.type);
-            type= parameter.type.name;
+        let typeReturn= return_.type;
+        if(typeReturn.constructor.name === type.UMLDataType.name) {
+            typeReturn = typeReturn.name;
+        }else if(typeof(typeReturn) === 'object') {
+            if(adduse) this.addUse(typeReturn);
+            typeReturn= typeReturn.name;
         }
-        return type;
+        return typeReturn;
+    }
+
+    resolveCommentClass(){
+        let documentation= this.class_.documentation;
+        if(!this.useDocumentation || documentation.trim() === '') return
+
+        let comment= [];
+        let lines= documentation.split('\n');
+        lines.forEach(line=> {
+            comment.push(' * '+line);
+        });
+
+        this.comment_class= '/**\n' +
+            comment.join('\n') + '\n'+
+            ' */\n';
     }
 
     resolveMethods(){
@@ -320,7 +362,7 @@ class FileClass {
                 comment+=this.tab()+' * @var '+this.resolveParameterToProperty(property, false)+'\n';
             }
             if(comment !== '')
-                comment= this.tab()+'/**\n' + comment + this.tab()+'*/\n'
+                comment= this.tab()+'/**\n' + comment + this.tab()+' */\n'
 
             this.properties.push(
                 comment+this.tab() + property.visibility+ ' ' + this.resolveParameter(property)+';'
