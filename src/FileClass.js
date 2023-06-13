@@ -6,6 +6,7 @@ class FileClass {
         this.isInterface= this.class_.constructor.name === type.UMLInterface.name;
         this.isNormalClass= this.class_.constructor.name === type.UMLClass.name;
         this.isAbstractClass= this.class_.isAbstract;
+        this.isTest= this.class_.name.endsWith('Test');
 
         this.uses= [];
         this.construct_parameters= [];
@@ -184,17 +185,32 @@ class FileClass {
     }
 
     formatCommentMethod(method){
-        if(!this.useDocumentation && !this.generatePhpDoc) return '';
+        if(!this.useDocumentation && !this.generatePhpDoc){
+            if(this.isTest && method !== undefined && method.name.startsWith('is_')){
+                return this.tab()+'/**\n' +
+                    this.tab()+' * @test'+ '\n'+
+                    this.tab()+' */\n';
+            }else{
+                return '';
+            }
+        }
 
         let comment= [];
 
+
+        if(this.isTest && method !== undefined && method.name.startsWith('is_')){
+            comment.push(this.tab()+' * @test'+ '\n');
+        }
+
         let documentation= method===undefined?'':method.documentation;
         if(this.useDocumentation && documentation.trim() !== ''){
+            if(comment.length>0)comment.push(this.tab()+' * ');
             let lines= documentation.split('\n');
             lines.forEach(line=> {
                 comment.push(this.tab()+' * '+line);
             });
         }
+
 
         if(this.generatePhpDoc && method !== undefined){
             if(comment.length>0)comment.push(this.tab()+' * ');
