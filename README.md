@@ -9,3 +9,20 @@ escanear.
 * type.UMLInterfaceRealization: agrega el implement a nivel de clase, hacía la interfaz que implementa.
 * type.UMLGeneralization: agrega el extends de la clase a la que hereda.
 * type.UMLDependency: especifica las clases que van a ser inyectadas por el construct__.
+
+## Nombramiento
+
+Los nombres de las interfaces se renombraran así:
+
+* RepositoryInterface por Repo. Ejemplo: UserRepositoryInterface=> $userRepo
+* Interface por ''. Ejemplo: UserServiceInterface=> $userService
+
+## Tests
+
+Si la clase termina con el nombre Test y tiene métodos que inicien con is_, agregara el comentario test
+
+```
+/**
+ * @test
+ */
+```
