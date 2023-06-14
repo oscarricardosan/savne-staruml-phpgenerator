@@ -4,36 +4,30 @@
       "id": "tools",
       "submenu": [
         {
-          "id": "SavneMenu",
-          "label": "Savne Tools",
+          "id": "SavneMenu.Php",
+          "label": "Savne PHP",
           "submenu": [
             {
-              "id": "SavneMenu.PhpGenerator",
-              "label": "PHP Generator",
-              "submenu": [
-                {
-                  "id": "SavneMenu.PhpGenerator.CodeFromPackage",
-                  "label": "Generate from Package",
-                  "command": "Savne-PhpGenerator:CodeFromPackage"
-                },
-                {
-                  "id": "SavneMenu.PhpGenerator.CodeFromClass",
-                  "label": "Generate from Class",
-                  "command": "Savne-PhpGenerator:CodeFromClass"
-                },
-                {
-                  "id": "SavneMenu.PhpGenerator.CodeFromInterface",
-                  "label": "Generate from Interface",
-                  "command": "Savne-PhpGenerator:CodeFromInterface"
-                },
-                {
-                  "id": "SavneMenu.PhpGenerator.Configure",
-                  "label": "Configure...",
-                  "command": "Savne-PhpGenerator:Configure"
-                },
-                { "type": "separator" }
-              ]
-            }
+              "id": "SavneMenu.Php.GeneratorCodeFromPackage",
+              "label": "Generate Code from Package",
+              "command": "Savne-PhpGenerator:CodeFromPackage"
+            },
+            {
+              "id": "SavneMenu.Php.GeneratorCodeFromClass",
+              "label": "Generate Code from Class",
+              "command": "Savne-PhpGenerator:CodeFromClass"
+            },
+            {
+              "id": "SavneMenu.Php.GeneratorCodeFromInterface",
+              "label": "Generate Code from Interface",
+              "command": "Savne-PhpGenerator:CodeFromInterface"
+            },
+            {
+              "id": "SavneMenu.Php.GeneratorConfigure",
+              "label": "Configure...",
+              "command": "Savne-PhpGenerator:Configure"
+            },
+            { "type": "separator" }
           ]
         }
       ]

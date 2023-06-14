@@ -26,66 +26,6 @@ class SavnePhpGenerator {
         });
     }
 
-    getPreferencesSetup() {
-        return {
-            id: "savne.phpGenerator",
-            name: "Savne PHP Generator",
-            schema: {
-                "savne.phpGenerator": {
-                    text: "Savne PHP Generator",
-                    type: "section"
-                },
-                "savne.phpGenerator.indentSpaces": {
-                    text: "Indent Spaces",
-                    description: "Number of spaces for indentation",
-                    type: "number",
-                    default: 4
-                },
-                "savne.phpGenerator.typeConstruct": {
-                    text: "Dependency injection type",
-                    description: "Specifies the type of dependency injection to use in the class",
-                    type: "dropdown",
-                    default: 'PARAMETERS-CONSTRUCTOR',
-                    options: [
-                        {value: 'PARAMETERS-CONSTRUCTOR', text: 'Constructor parameters'},
-                        {value: 'BODY-CONSTRUCTOR', text: "Constructor body"},
-                        {value: 'NO', text: 'Not inject'},
-                    ],
-                },
-                "savne.phpGenerator.useSpecification": {
-                    text: "Use specification as method code",
-                    description: "",
-                    type: "dropdown",
-                    default: 0,
-                    options: [
-                        {value: 1, text: "Yes"},
-                        {value: 0, text: 'No'},
-                    ],
-                },
-                "savne.phpGenerator.useDocumentation": {
-                    text: "Use documentation as comment code",
-                    description: "",
-                    type: "dropdown",
-                    default: 0,
-                    options: [
-                        {value: 1, text: "Yes"},
-                        {value: 0, text: 'No'},
-                    ],
-                },
-                "savne.phpGenerator.generatePhpDoc": {
-                    text: "Generate PHPDoc",
-                    description: "",
-                    type: "dropdown",
-                    default: 0,
-                    options: [
-                        {value: 1, text: "Yes"},
-                        {value: 0, text: 'No'},
-                    ],
-                },
-            }
-        };
-    }
-
     generateCodeFromPackage() {
         this.directoryClasses= DirectoryClasses.new();
         this.getPackage();
@@ -100,6 +40,7 @@ class SavnePhpGenerator {
         ).then(function ({buttonId, returnValue}) {
             if (buttonId === 'ok') {
                 self.containerMain= returnValue
+                self.clearMapClasses();
                 self.mapClasses(returnValue);
                 self.determineRoutes();
                 self.exportFiles();
@@ -113,10 +54,14 @@ class SavnePhpGenerator {
             if(element.constructor.name === type.UMLClass.name || element.constructor.name === type.UMLInterface.name) {
                 this.classes.push(element);
             }
-            if(element.constructor.name === type.UMLPackage.name) {
+            if(element.constructor.name === type.UMLPackage.name || element.constructor.name === type.UMLModel.name) {
                 this.mapClasses(element);
             }
         })
+    }
+
+    clearMapClasses() {
+        this.classes= [];
     }
 
 
@@ -194,6 +139,9 @@ class SavnePhpGenerator {
         ).then(function ({buttonId, returnValue}) {
             if (buttonId === 'ok') {
                 self.containerMain= returnValue
+                self.clearMapClasses();
+                self.mapClasses(self.containerMain);
+                self.determineRoutes();
                 app.elementPickerDialog.showDialog(
                     "Select the class to process, once you choose the class, generate the php code",
                     null,
@@ -201,8 +149,6 @@ class SavnePhpGenerator {
                 ).then(function ({buttonId, returnValue}) {
                     if (buttonId === 'ok') {
                         let class_= returnValue
-                        self.mapClasses(self.containerMain);
-                        self.determineRoutes();
                         self.classes= [class_];
                         self.exportClass(class_);
                     }
@@ -225,8 +171,10 @@ class SavnePhpGenerator {
             type.UMLPackage
         ).then(function ({buttonId, returnValue}) {
             if (buttonId === 'ok') {
-                self.containerMain= returnValue
-
+                self.containerMain= returnValue;
+                self.clearMapClasses();
+                self.mapClasses(self.containerMain);
+                self.determineRoutes();
                 app.elementPickerDialog.showDialog(
                     "Select the interface to process, once you choose the interface, generate the php code",
                     null,
@@ -234,8 +182,6 @@ class SavnePhpGenerator {
                 ).then(function ({buttonId, returnValue}) {
                     if (buttonId === 'ok') {
                         let interface_= returnValue
-                        self.mapClasses(self.containerMain);
-                        self.determineRoutes();
                         self.classes= [interface_];
                         self.exportClass(interface_);
                     }
@@ -266,7 +212,6 @@ class SavnePhpGenerator {
         app.commands.register('Savne-PhpGenerator:CodeFromClass',  this.generateCodeFromClass.bind(this));
         app.commands.register('Savne-PhpGenerator:CodeFromInterface',  this.generateCodeFromInterface.bind(this));
         app.commands.register("Savne-PhpGenerator:Configure", this.configure.bind(this));
-        app.preferences.register(this.getPreferencesSetup());
     }
 }
 

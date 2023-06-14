@@ -1,0 +1,57 @@
+{
+  "id": "savne.phpGenerator",
+  "name": "Savne PHP Generator",
+  "schema": {
+    "savne.phpGenerator": {
+      "text": "Savne PHP Generator",
+      "type": "section"
+    },
+    "savne.phpGenerator.indentSpaces": {
+      "text": "Indent Spaces",
+      "description": "Number of spaces for indentation",
+      "type": "number",
+      "default": 4
+    },
+    "savne.phpGenerator.typeConstruct": {
+      "text": "Dependency injection type",
+      "description": "Specifies the type of dependency injection to use in the class",
+      "type": "dropdown",
+      "default": "PARAMETERS-CONSTRUCTOR",
+      "options": [
+        {"value": "PARAMETERS-CONSTRUCTOR", "text": "Constructor parameters"},
+        {"value": "BODY-CONSTRUCTOR", "text": "Constructor body"},
+        {"value": "NO", "text": "Not inject"}
+      ]
+    },
+    "savne.phpGenerator.useSpecification": {
+      "text": "Use specification as method code",
+      "description": "",
+      "type": "dropdown",
+      "default": 0,
+      "options": [
+        {"value": 1, "text": "Yes"},
+        {"value": 0, "text": "No"}
+      ]
+    },
+    "savne.phpGenerator.useDocumentation": {
+      "text": "Use documentation as comment code",
+      "description": "",
+      "type": "dropdown",
+      "default": 0,
+      "options": [
+        {"value": 1, "text": "Yes"},
+        {"value": 0, "text": "No"}
+      ]
+    },
+    "savne.phpGenerator.generatePhpDoc": {
+      "text": "Generate PHPDoc",
+      "description": "",
+      "type": "dropdown",
+      "default": 0,
+      "options": [
+        {"value": 1, "text": "Yes"},
+        {"value": 0, "text": "No"}
+      ]
+    }
+  }
+}
