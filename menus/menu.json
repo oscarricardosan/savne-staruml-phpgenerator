@@ -27,7 +27,12 @@
               "label": "Configure...",
               "command": "Savne-PhpGenerator:Configure"
             },
-            { "type": "separator" }
+            { "type": "separator" },
+            {
+              "id": "SavneMenu.Php.GeneratorConfigure",
+              "label": "Test...",
+              "command": "Savne-PhpImporter:FromCode"
+            }
           ]
         }
       ]
