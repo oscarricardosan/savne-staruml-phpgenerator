@@ -1,28 +1,136 @@
-1. Para evitar que un paquete sea usado en el namespace de una clase, 
-puede cambiar la propiedad visibility de un paquete a private. 
-Con ello será excluida del path de la ruta, esto no la retira de los componentes a 
-escanear.
+# Savne-Php
 
-## Tipos de asociación
+**Savne-Php** is a package created by employees of
+[Savne SAS](https://savne.net) and free to use by anyone.
 
-* type.UMLAssociation: solo agrega el use en la clase padre, especificando la instancia de clase que se va a usar.
-* type.UMLInterfaceRealization: agrega el implement a nivel de clase, hacía la interfaz que implementa.
-* type.UMLGeneralization: agrega el extends de la clase a la que hereda.
-* type.UMLDependency: especifica las clases que van a ser inyectadas por el construct__.
+This package is made up of a series of tools that will allow programmers
+PHP get the juice out of the StarUml tool.
 
-## Nombramiento
+---
 
-Los nombres de las interfaces se renombraran así:
+## PHP Generator
 
-* RepositoryInterface por Repo. Ejemplo: UserRepositoryInterface=> $userRepo
-* Interface por ''. Ejemplo: UserServiceInterface=> $userService
+The PHP Generator tool allows you to generate the php code of a project from a diagram
+of UML classes.
 
-## Tests
+### USE
 
-Si la clase termina con el nombre Test y tiene métodos que inicien con is_, agregara el comentario test
+Generate code from a package: this option allows us to generate the code of all the classes, interface,
+data types and relationships.
 
+1. Click on the menu Tools/Savne PHP/Generate Code from Package.
+2. Select the code package you want to generate.
+3. Select the folder in which the code will be exported.
+
+Generate code from a class: this option will generate the code of the desired class together with its respective
+folder structure.
+
+1. Click on the menu Tools/Savne PHP/Generate Code from Class.
+2. Select the package that will serve as the root for the code namespace.
+3. Select the class that will be exported.
+4. Select the folder where the code will be exported.
+
+Generate code from an interface: this option will only generate the respective code of the selected class, however,
+will use as namespace the selected initial package.
+
+1. Click on the menu Tools/Savne PHP/Generate Code from Interface.
+2. Select the package that will serve as the root for the code namespace.
+3. Select the interface that will be exported.
+4. Select the folder where the code will be exported.
+
+
+### CONFIGURATION OPTIONS
+
+* **Indent Spaces:** Number of spaces for indentation
+* **Dependency injection type:** Specifies the type of dependency injection to use in the class,
+  * Constructor parameters
+   ```php
+    public function __construct(
+        protected $repo      
+    ){
+      ....  
+    } 
+    ```
+  * Constructor body
+   ```php
+    protected $repo;
+    public function __construct(){
+      $this->repo= new Repo();
+    } 
+    ```
+  * Not injec
+* **Use specification as method code:** Use the content of the specification field, in an operation as code within the method.
+   ```php
+    public function sum(
+        $num1, $num2
+    ){
+      $your_code= $num1 + $num2;
+      return $your_code * 5;
+    } 
+    ```
+* **Use documentation as comment code:** Use the content of the documentation field as a comment for methods or properties.
+  ```php
+    /**
+     * This function should work for 
+     * environments multi countries, in 3 different  
+     * development environments and applying chemical principles >-<
+     **/
+    public function sum(
+        $num1, $num2
+    ){
+      /** YODO: Your code */
+    } 
+    ```
+* **Generate PHPDoc:** Generate standard phpdoc.
+     ```php
+       /**
+        * $var $num1
+        * $var $num2
+        **/
+       public function sum(
+          $num1, $num2
+       )
+       {
+          /** YODO: Your code */
+       }
+    ```
+
+
+### CONVENTIONS
+
+* If you want a package to be omitted and not part of the class namespace
+  change the visibility type to `private`.
+
+* The names of the interfaces will be renamed like this:
+    * RepositoryInterface by Repo. Example: UserRepositoryInterface=> $userRepo
+    * Interface by ''. Example: UserServiceInterface=> $userService
+
+* If the class ends with the name **Test** and has methods that start with is_, add the comment test
+* 
 ```
-/**
- * @test
- */
+class PrinterTest
+{
+    /**
+     * @test
+     */
+     public function is_sum_working(){
+        ...
+     }
+     
+} 
 ```
+
+### RELATIONSHIP TYPES
+
+The type of relationship implemented will influence the code as follows:
+
+* UMLAssociation: add `use` from the parent class to the child class, indicating the namespace of the class to use.
+* UMLInterfaceRealization: in the target class add `implement` of the related interface.
+* UMLGeneralization: in the child class it will add the respective `extends` and `use` of the parent class.
+* UMLDependency: in the parent class the respective `inject` will be added to the construct__.
+---
+
+## PHP Importer
+
+---
+

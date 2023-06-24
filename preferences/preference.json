@@ -25,7 +25,7 @@
     },
     "savne.phpGenerator.useSpecification": {
       "text": "Use specification as method code",
-      "description": "",
+      "description": "Use the content of the specification field, in an operation as code within the method.",
       "type": "dropdown",
       "default": 0,
       "options": [
@@ -35,7 +35,7 @@
     },
     "savne.phpGenerator.useDocumentation": {
       "text": "Use documentation as comment code",
-      "description": "",
+      "description": "Use the content of the documentation field as a comment for methods or properties.",
       "type": "dropdown",
       "default": 0,
       "options": [
