@@ -9,6 +9,7 @@ class PhpFileImporter {
         this.implements = undefined;
         this.extends = undefined;
         this.uses = [];
+        this.methods = [];
 
         this.contentFile = fs.readFileSync(this.pathFile, 'utf8');
         this.contentFile= this.contentFile.replaceAll(';', ";\n");
@@ -31,6 +32,7 @@ class PhpFileImporter {
         this.determineTypeClass();
         if(this.typeClass === undefined)return;
         this.removeKeysOpenAndClose();
+        this.extractClassMethods();
         // console.log(this.lines);
         console.log(this);
     }
@@ -138,6 +140,216 @@ class PhpFileImporter {
         if (indexLine !== -1) {
             this.lines.splice(indexLine, 1);
         }
+        this.lines.reverse();
+    }
+
+    extractClassMethods(){
+        this.deleteCode();
+        this.extractMehods();
+        /**
+         * @TODO:
+         */
+        this.polishMethodInfo();
+    }
+
+    deleteCode(){
+        let searchCloseKey= 0;
+        let insideFunction= false;
+        let openFunction= false;
+
+        let indexLine= 0;
+        do{
+            let line= this.lines[indexLine];
+            if(line.includes(' function ')){
+                openFunction= true;
+                indexLine++;
+                searchCloseKey= 0;
+                continue;
+            }
+
+            if(openFunction && line === '{'){
+                insideFunction= true;
+                openFunction= false;
+                searchCloseKey++;
+                indexLine++;
+                continue;
+            }
+
+            if(insideFunction) {
+                if (line === '{') {
+                    searchCloseKey++;
+                    this.lines.splice(indexLine, 1);
+                    continue;
+                }
+                else if (line === '}') {
+                    searchCloseKey--;
+
+                    if (searchCloseKey === 0) {
+                        insideFunction = false;
+                    }
+
+                    this.lines.splice(indexLine, 1);
+                    continue;
+                } else {
+                    this.lines.splice(indexLine, 1);
+                    continue;
+                }
+            }
+            indexLine++;
+        }while(indexLine < this.lines.length)
+    }
+
+    extractMehods(){
+        let tempLines= this.lines.join(' ');
+        tempLines= tempLines.replaceAll(';', ";\n");
+        tempLines= tempLines.replaceAll('{', "{\n");
+        tempLines= tempLines.replaceAll('/**', "\n/**\n");
+        tempLines= tempLines.replaceAll('*/', "\n*/\n");
+        tempLines= tempLines.replaceAll('* ', "\n* ");
+        this.lines= tempLines.split("\n");
+        this.polishLines();
+
+        let newMethod= {
+            'name': '',
+            'isStatic': false,
+            'isAbstract': false,
+            'parameters': [],
+            'return': '',
+            'comments': '',
+            'visibility': 'public',
+        };
+        this.lines.reverse();
+
+        let indexLine= 0;
+        do{
+            let line= this.lines[indexLine];
+            if(!line.startsWith('*') && line.includes('function ') && line.endsWith('{')){
+                let method= Object.assign({}, newMethod);
+                method.parameters= [];
+                let return_parts= line.split(':');
+                if(return_parts.length > 1) return_parts[1];
+                let functionHeadParts= return_parts[0].split('(');
+                method.parameters= method.parameters.concat(
+                    functionHeadParts[1].replaceAll(')', '').replaceAll('{', '').trim().split(',')
+                );
+                let functionSignatory= functionHeadParts[0].split(' ');
+                if(functionSignatory[0] === 'function'){
+                    method.visibility= 'public';
+                    method.name= functionSignatory[1];
+                }
+                else if(functionSignatory[0] === 'static' && functionSignatory[1] === 'function'){
+                    method.visibility= 'public';
+                    method.name= functionSignatory[2];
+                    method.isStatic= true;
+                }
+                else if(functionSignatory[0] === 'abstract' && functionSignatory[1] === 'function') {
+                    method.isAbstract= true;
+                    method.visibility = 'public';
+                    method.name = functionSignatory[2];
+                }
+                else if(
+                    (functionSignatory[0] === 'abstract' && functionSignatory[1] === 'static') ||
+                    (functionSignatory[0] === 'static' && functionSignatory[1] === 'abstract')
+                ){
+                        method.isStatic= true;
+                        method.isAbstract= true;
+                        method.name = functionSignatory[3];
+                }else{
+                    method.visibility= functionSignatory[0];
+                    if(functionSignatory[1] === 'function'){
+                        method.name= functionSignatory[2];
+                    }
+                    else if(
+                        functionSignatory[1] === 'static' &&
+                        functionSignatory[2] === 'function'
+                    ){
+                        method.isStatic= true;
+                        method.name= functionSignatory[3];
+                    }
+                    else if(
+                        functionSignatory[1] === 'abstract' &&
+                        functionSignatory[2] === 'function'
+                    ){
+                        method.isAbstract= true;
+                        method.name= functionSignatory[3];
+                    }
+                    else if(
+                        (functionSignatory[1] === 'abstract' && functionSignatory[2] === 'static') ||
+                        (functionSignatory[1] === 'static' && functionSignatory[2] === 'abstract')
+                    ){
+                        method.isAbstract= true;
+                        method.isStatic= true;
+                        method.name= functionSignatory[4];
+                    }
+
+                }
+                this.lines.splice(indexLine, 1);
+
+                line= this.lines[indexLine];
+                if(line === '*/'){
+                    this.lines.splice(indexLine, 1);
+                    let emptySpaces= 0;
+                    do {
+                        line= this.lines[indexLine];
+                        if(line === '/**' || line === '/*') {
+                            this.lines.splice(indexLine, 1);
+                            break;
+                        }
+                        if(line.includes('@param ')){
+                            let line_parts= line.split('@param ');
+                            method.parameters.push(line_parts[1]);
+                        }
+                        else if(line.includes('@return ')){
+                            let line_parts= line.split('@return ');
+                            method.return= line_parts[1];
+                        }
+                        else if(!line.includes('@throws')){
+                            if(
+                                (line.trim() === '' || line.trim() === '*' || line.trim() === '**') &&
+                                method.comments === ''
+                            ) {
+                                this.lines.splice(indexLine, 1);
+                                continue;
+                            }
+
+                            if(line.startsWith('*')){
+                                let tempLine= line.substring(1).trim();
+                                if(tempLine === '' && emptySpaces >2) {
+                                    this.lines.splice(indexLine, 1);
+                                    continue;
+                                }
+                                if(tempLine === '') {
+                                    emptySpaces++;
+                                    method.comments+= tempLine+"\n";
+                                }else {
+                                    emptySpaces= 0;
+                                    method.comments += tempLine+ "\n";
+                                }
+                            }else{
+                                let tempLine= line.trim();
+                                if(tempLine === '' && emptySpaces >2) {
+                                    this.lines.splice(indexLine, 1);
+                                    continue;
+                                }
+                                if(tempLine === '') {
+                                    emptySpaces++;
+                                    method.comments+= line+"\n";
+                                }else {
+                                    emptySpaces= 0;
+                                    method.comments+= line+"\n";
+                                }
+                            }
+                        }
+                        this.lines.splice(indexLine, 1);
+                    }while(indexLine < this.lines.length);
+                }
+
+                this.methods.push(method);
+                continue;
+            }
+
+            indexLine++;
+        }while(indexLine < this.lines.length);
         this.lines.reverse();
     }
 

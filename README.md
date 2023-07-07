@@ -1,4 +1,4 @@
-# Savne-Php
+# Savne-PHP
 
 **Savne-Php** is a package created by employees of
 [Savne SAS](https://savne.net) and free to use by anyone.
