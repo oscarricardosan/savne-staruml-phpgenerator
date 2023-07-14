@@ -2,39 +2,39 @@ const fs = require("fs");
 class PhpFileImporter {
 
     constructor(pathFile) {
-        this.isValidPhp = false;
+        this.isValidPhp_ = false;
         this.pathFile = pathFile;
+        this.name = '';
         this.namespace = undefined;
         this.typeClass = undefined;
         this.implements = undefined;
         this.extends = undefined;
         this.uses = [];
         this.methods = [];
+        this.properties = [];
 
         this.contentFile = fs.readFileSync(this.pathFile, 'utf8');
         this.contentFile= this.contentFile.replaceAll(';', ";\n");
         this.contentFile= this.contentFile.replaceAll('{', "\n{\n");
         this.contentFile= this.contentFile.replaceAll('}', "\n}\n");
-        // console.log(this.contentFile);
         this.lines= this.contentFile.split("\n");
     }
 
     isValidPhp(){
-        return this.isValidPhp;
+        return this.isValidPhp_;
     }
 
     process(){
         this.polishLines();
         this.removePhpTags();
-        if(this.isValidPhp === false)return;
+        if(this.isValidPhp() === false)return;
         this.extractNamespace();
         this.extractUses();
         this.determineTypeClass();
         if(this.typeClass === undefined)return;
         this.removeKeysOpenAndClose();
         this.extractClassMethods();
-        // console.log(this.lines);
-        console.log(this);
+        this.extractProperties();
     }
 
     polishLines(){
@@ -50,9 +50,9 @@ class PhpFileImporter {
         let indexLine = this.lines.findIndex(content => content === '<?php');
         if (indexLine !== -1) {
             this.lines.splice(indexLine, 1);
-            this.isValidPhp= true;
+            this.isValidPhp_= true;
         }else{
-            this.isValidPhp= false;
+            this.isValidPhp_= false;
             return;
         }
 
@@ -95,18 +95,21 @@ class PhpFileImporter {
         if (indexLine !== -1) {
             indexTypeClass= indexLine;
             this.typeClass= 'Class';
+            this.name= this.lines[indexLine].split(' ')[1];
         }
 
         indexLine = this.lines.findIndex(content => content.startsWith('abstract class '));
         if (indexLine !== -1) {
             this.typeClass= 'AbstractClass';
             indexTypeClass= indexLine;
+            this.name= this.lines[indexLine].split(' ')[2];
         }
 
         indexLine = this.lines.findIndex(content => content.startsWith('interface '));
         if (indexLine !== -1) {
             this.typeClass= 'Interface';
             indexTypeClass= indexLine;
+            this.name= this.lines[indexLine].split(' ')[1];
         }
         if(indexTypeClass === undefined) return false;
 
@@ -146,10 +149,6 @@ class PhpFileImporter {
     extractClassMethods(){
         this.deleteCode();
         this.extractMehods();
-        /**
-         * @TODO:
-         */
-        this.polishMethodInfo();
     }
 
     deleteCode(){
@@ -214,7 +213,7 @@ class PhpFileImporter {
             'isStatic': false,
             'isAbstract': false,
             'parameters': [],
-            'return': '',
+            'return': undefined,
             'comments': '',
             'visibility': 'public',
         };
@@ -229,9 +228,8 @@ class PhpFileImporter {
                 let return_parts= line.split(':');
                 if(return_parts.length > 1) return_parts[1];
                 let functionHeadParts= return_parts[0].split('(');
-                method.parameters= method.parameters.concat(
-                    functionHeadParts[1].replaceAll(')', '').replaceAll('{', '').trim().split(',')
-                );
+                method.parameters= this.extractParameters(line);
+                method.return= this.extractReturnOfSignatory(line);
                 let functionSignatory= functionHeadParts[0].split(' ');
                 if(functionSignatory[0] === 'function'){
                     method.visibility= 'public';
@@ -301,7 +299,7 @@ class PhpFileImporter {
                         }
                         else if(line.includes('@return ')){
                             let line_parts= line.split('@return ');
-                            method.return= line_parts[1];
+                            method.return= this.extractReturnOfSignatory(':'+line_parts[1]);
                         }
                         else if(!line.includes('@throws')){
                             if(
@@ -320,10 +318,10 @@ class PhpFileImporter {
                                 }
                                 if(tempLine === '') {
                                     emptySpaces++;
-                                    method.comments+= tempLine+"\n";
+                                    method.comments= tempLine+"\n"+method.comments;
                                 }else {
                                     emptySpaces= 0;
-                                    method.comments += tempLine+ "\n";
+                                    method.comments= tempLine+"\n"+method.comments;
                                 }
                             }else{
                                 let tempLine= line.trim();
@@ -333,10 +331,10 @@ class PhpFileImporter {
                                 }
                                 if(tempLine === '') {
                                     emptySpaces++;
-                                    method.comments+= line+"\n";
+                                    method.comments= line+"\n"+method.comments;
                                 }else {
                                     emptySpaces= 0;
-                                    method.comments+= line+"\n";
+                                    method.comments= line+"\n"+method.comments;
                                 }
                             }
                         }
@@ -351,6 +349,232 @@ class PhpFileImporter {
             indexLine++;
         }while(indexLine < this.lines.length);
         this.lines.reverse();
+    }
+
+    extractProperties(){
+        let newProperty= {
+            'name': '',
+            'isStatic': false,
+            'multiplicity': 1,
+            'defaultValue': '',
+            'type': '',
+            'comments': '',
+            'visibility': 'public',
+        };
+        this.lines.reverse();
+        let indexLine= 0;
+        do{
+            let line= this.lines[indexLine];
+            if(line.includes('$') && line.endsWith(';')){
+                let property= Object.assign({}, newProperty);
+                let property_parts= line.split('=');
+
+                if(property_parts.length>1) {
+                    let tempVal= property_parts[1].split(';');
+                    property.defaultValue= tempVal[0].trim();
+                    if(tempVal[0].substring(1) === '"' || tempVal[0].substring(1) === "'") {
+                        property.defaultValue = tempVal[0].substring(1, tempVal.length - 2);
+                    }
+                }
+
+                property_parts= property_parts[0].split(' ');
+                if(
+                    !property_parts[0].includes('public') &&
+                    !property_parts[0].includes('protected') &&
+                    !property_parts[0].includes('private')
+                ){
+                    break;
+                }
+
+                if(property.defaultValue === '[]')property.type= 'array';
+                property.visibility= property_parts[0];
+
+                if(property_parts[1].startsWith('$')) {
+                    property.name = property_parts[1].replace('$', '');
+                }
+                else if(property_parts[1] === 'static') {
+                    property.isStatic = true;
+                    if(property_parts[2].startsWith('$')) {
+                        property.name = property_parts[2].replace('$', '');
+                    }else{
+                        property.type = property_parts[2];
+                        property.name = property_parts[3].replace('$', '');
+                    }
+                }
+                else {
+                    if(property_parts[1].startsWith('$')) {
+                        property.name = property_parts[1].replace('$', '');
+                    }else{
+                        property.type = property_parts[1];
+                        property.type.replace('?', '');
+                        property.name = property_parts[2].replace('$', '');
+                    }
+                }
+
+                if(property.type.includes('?') || property.type.includes('null')) {
+                    property.multiplicity = '0..1';
+                    if(property.defaultValue === '') {
+                        property.defaultValue = 'null';
+                    }
+                    property.type.replace('?', '');
+                }
+                if(property.type.includes('array') && property.type.includes('?')) {
+                    property.multiplicity = '0..*';
+                    property.type.replace('?', '');
+                }
+                if(property.defaultValue === 'null' && property.type === 'array') {
+                    property.multiplicity = '0..*';
+                }
+                if(property.defaultValue === 'null' && property.type !== 'array') {
+                    property.multiplicity = '0..1';
+                }
+
+                property.name= property.name.replace(';', '');
+
+                this.lines.splice(indexLine, 1);
+
+                line= this.lines[indexLine];
+                if(line === '*/'){
+                    this.lines.splice(indexLine, 1);
+                    let emptySpaces= 0;
+                    do {
+                        line= this.lines[indexLine];
+                        if(line === '/**' || line === '/*') {
+                            this.lines.splice(indexLine, 1);
+                            break;
+                        }
+                        if(line.includes('@var ')){
+                            let property_parts= line.split('@var ');
+                            property.type = property_parts[1];
+                            if(property.type.includes('?') || property.type.includes('null')) property.multiplicity= '0..1';
+                            if(property.type.includes('array') && property.type.includes('?')) property.multiplicity= '0..*';
+                            property.type.replace('?', '');
+                        }
+                        else{
+                            if(
+                                (line.trim() === '' || line.trim() === '*' || line.trim() === '**') &&
+                                property.comments === ''
+                            ) {
+                                this.lines.splice(indexLine, 1);
+                                continue;
+                            }
+
+                            if(line.startsWith('*')){
+                                let tempLine= line.substring(1).trim();
+                                if(tempLine === '' && emptySpaces >2) {
+                                    this.lines.splice(indexLine, 1);
+                                    continue;
+                                }
+                                if(tempLine === '') {
+                                    emptySpaces++;
+                                    property.comments= tempLine+"\n"+property.comments;
+                                }else {
+                                    emptySpaces= 0;
+                                    property.comments= tempLine+"\n"+property.comments;
+                                }
+                            }else{
+                                let tempLine= line.trim();
+                                if(tempLine === '' && emptySpaces >2) {
+                                    this.lines.splice(indexLine, 1);
+                                    continue;
+                                }
+                                if(tempLine === '') {
+                                    emptySpaces++;
+                                    property.comments= line+"\n"+property.comments;
+                                }else {
+                                    emptySpaces= 0;
+                                    property.comments= line+"\n"+property.comments;
+                                }
+                            }
+                        }
+                        this.lines.splice(indexLine, 1);
+                    }while(indexLine < this.lines.length);
+                }
+                this.properties.push(property);
+                continue;
+            }
+
+            indexLine++;
+        }while(indexLine < this.lines.length);
+        this.lines.reverse();
+    }
+
+    extractParameters(signatory){
+        let parameters= [];
+        let newParameter= {
+            'name': '',
+            'direction': 'in',
+            'isStatic': false,
+            'visibility': 'public',
+            'multiplicity': 1,
+            'defaultValue': '',
+            'type': '',
+        };
+
+        let parts= signatory.split(')');
+        parts= parts[0].split('(');
+        parts= parts[1];
+        if(parts === '' || parts === undefined) return [];
+
+        let parametersString= parts.split(',');
+        parametersString.forEach(parameterString=> {
+            let parameter= Object.assign({}, newParameter);
+            parts= parameterString.split('=')
+            if(parts.length>1){
+                parameter.defaultValue= parts[1];
+                if(parameter.defaultValue.startsWith("'") || parameter.defaultValue.startsWith('"')){
+                    parameter.defaultValue= parameter.defaultValue.substring(1, parameter.defaultValue.length - 2);
+                }
+            }
+            parameterString= parts[0];
+            parts= parameterString.split(' ')
+            if(parts[0].startsWith('$')){
+                parameter.name= parts[0].replace('$', '');
+            }
+            else if(parts[0].startsWith('?')){
+                parameter.name= parts[1].replace('$', '');
+                parameter.type= parts[0].replace('?', '');
+                if(parameter.type==='array') parameter.multiplicity= '0..*';
+                else parameter.multiplicity= '0..1';
+            }
+            else{
+                parameter.name= parts[1].replace('$', '');
+                parameter.type= parts[0];
+                parameter.multiplicity= '1';
+            }
+            parameters.push(parameter);
+        });
+        return parameters;
+    }
+
+    extractReturnOfSignatory(signatory){
+        let newReturn= {
+            'name': '',
+            'direction': 'return',
+            'multiplicity': 1,
+            'type': '',
+        };
+        signatory= signatory.replace('{', '');
+        let parts= signatory.split(':');
+        if(parts.length < 2) return undefined;
+        parts= parts[1];
+
+        if(parts.startsWith('?')){
+            newReturn.type= parts.replace('?', '');
+            if(newReturn.type === 'array')
+                newReturn.multiplicity= '0..*';
+            else
+                newReturn.multiplicity= '0..1';
+        }else{
+            newReturn.type= parts;
+            if(newReturn.type === 'array')
+                newReturn.multiplicity= '1..*';
+            else
+                newReturn.multiplicity= '1';
+        }
+
+        return newReturn;
+
     }
 
 }
