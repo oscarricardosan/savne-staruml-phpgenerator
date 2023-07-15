@@ -5,7 +5,7 @@ class PhpFileImporter {
         this.isValidPhp_ = false;
         this.pathFile = pathFile;
         this.name = '';
-        this.namespace = undefined;
+        this.namespace = '\\';
         this.typeClass = undefined;
         this.implements = undefined;
         this.extends = undefined;

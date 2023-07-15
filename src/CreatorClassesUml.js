@@ -1,4 +1,5 @@
 const fs = require("fs");
+const DirectoryPackages = require("./DirectoryPackages");
 class CreatorClassesUml {
 
     constructor(classesFiles) {
@@ -15,9 +16,22 @@ class CreatorClassesUml {
         ).then(function ({buttonId, returnValue}) {
             if (buttonId === 'ok') {
                 self.packageDestination= returnValue;
+                self.createPackages();
                 self.createClasses();
             }
         });
+    }
+
+    createPackages(){
+        this.directoryPackages= DirectoryPackages.new();
+        let packgesRoutes= [];
+        this.classesFiles.forEach(classFile=> {
+            packgesRoutes.push(classFile.namespace);
+        });
+        this.directoryPackages.createPacagesFromStringArray(
+            this.packageDestination,
+            packgesRoutes
+        );
     }
 
     createClasses() {
@@ -27,8 +41,6 @@ class CreatorClassesUml {
     }
 
     createClass(classFile) {
-        console.log(this.packageDestination);
-        console.log(classFile);
 
         let attributes=[];
         classFile.properties.forEach(property=> {
@@ -74,9 +86,10 @@ class CreatorClassesUml {
             operations.push(operation)
         })
 
-        let options = {
+        let parent_= this.directoryPackages.findPathByPath(classFile.namespace);
+        let class2 = app.factory.createModel({
             id: "UMLClass",
-            parent: this.packageDestination,
+            parent: parent_.element,
             modelInitializer: function (elem) {
                 elem.name = classFile.name;
                 elem.isAbstract = classFile.isAbstract;
@@ -85,9 +98,8 @@ class CreatorClassesUml {
                 elem.attributes= attributes;
                 elem.operations= operations;
             }
-        }
-        let class2 = app.factory.createModel(options);
-        console.log(class2);
+        });
+
     }
 
 }
@@ -96,7 +108,3 @@ exports.new = function(...args) {
     return new CreatorClassesUml(...args);
 };
 
-
-/***
- * TODO: Ya se crean clases ahora se deben crear los paquetes.
- */
