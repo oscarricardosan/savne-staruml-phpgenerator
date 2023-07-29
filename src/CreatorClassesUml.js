@@ -1,10 +1,13 @@
 const fs = require("fs");
 const DirectoryPackages = require("./DirectoryPackages");
+const DirectoryClasses = require("./DirectoryClasses");
 class CreatorClassesUml {
 
     constructor(classesFiles) {
         this.classesFiles = classesFiles;
+        this.directoryClasses;
         this.packageDestination;
+        this.processedClasses= [];
     }
 
     exec(){
@@ -18,6 +21,8 @@ class CreatorClassesUml {
                 self.packageDestination= returnValue;
                 self.createPackages();
                 self.createClasses();
+
+                app.toast.info("Proceso finalizado")
             }
         });
     }
@@ -28,13 +33,15 @@ class CreatorClassesUml {
         this.classesFiles.forEach(classFile=> {
             packgesRoutes.push(classFile.namespace);
         });
-        this.directoryPackages.createPacagesFromStringArray(
+        this.directoryPackages.createPackagesFromStringArray(
             this.packageDestination,
             packgesRoutes
         );
     }
 
     createClasses() {
+        this.directoryClasses= DirectoryClasses.new();
+        this.directoryClasses.scanClasses(this.packageDestination, '');
         this.classesFiles.forEach(classFile=> {
             this.createClass(classFile);
         });
@@ -42,64 +49,127 @@ class CreatorClassesUml {
 
     createClass(classFile) {
 
-        let attributes=[];
+        if(this.processedClasses.includes(classFile.namespace+'\\'+classFile.name)){
+            this.processedClasses.push(classFile.namespace + '\\' + classFile.name);
+            let classResult= this.directoryClasses.findByPath(classFile.namespace+'\\'+classFile.name);
+            return classResult.class_;
+        }
+
+        let parent_= this.directoryPackages.findByPath(classFile.namespace);
+        let classResult= this.directoryClasses.findByPath(classFile.namespace+'\\'+classFile.name);
+
+        let classUml= undefined;
+        if(classResult !== undefined){
+            classUml= classResult.class_;
+            app.engine.deleteElements(classResult.class_.attributes, []);
+            app.engine.deleteElements(classResult.class_.operations, []);
+        }else{
+            if(classFile.typeClass === 'Interface') classUml= "UMLInterface";
+            else classUml= "UMLClass";
+
+            classUml= app.factory.createModel({
+                id: classUml,
+                parent: parent_.element,
+                modelInitializer: function (elem) {
+                    elem.name = classFile.name;
+                    elem.isAbstract = classFile.isAbstract;
+                    elem.visibility = classFile.visibility;
+                    elem.documentation = classFile.comments;
+                }
+            });
+            this.directoryClasses.addClass(classFile.namespace, classUml);
+        }
+
+        // StarUml no permite crear relaciones atráves de la factoria
+        // let self= this;
+        // classFile.extends.forEach(function(extendClassFilePath){
+        //     let fileClass= self.findInClassesFilesByNamespaceAndClass(extendClassFilePath)
+        //     let extendClass;
+        //     if(fileClass !== undefined) {
+        //         extendClass= self.createClass(fileClass);
+        //     }
+        //
+        //     app.factory.createModel({
+        //         id: "UMLGeneralization",
+        //         parent: classUml,
+        //         field: 'ownedElements',
+        //         modelInitializer: function (elem) {
+        //             elem.source= classUml;
+        //             elem.target= extendClass;
+        //         }
+        //     });
+        //
+        // });
+
         classFile.properties.forEach(property=> {
-            let attribute= new type.UMLAttribute();
-            attribute.name= property.name;
-            attribute.visibility= property.visibility;
-            attribute.documentation= property.comments;
-            attribute.defaultValue= property.defaultValue;
-            attribute.multiplicity= property.multiplicity;
-            attribute.isStatic= property.isStatic;
-            attribute.type= property.type;
-            attributes.push(attribute)
+            app.factory.createModel({
+                id: "UMLAttribute",
+                parent: classUml,
+                field: 'attributes',
+                modelInitializer: function (elem) {
+                    elem.name= property.name;
+                    elem.visibility= property.visibility;
+                    elem.documentation= property.comments;
+                    elem.defaultValue= property.defaultValue;
+                    elem.multiplicity= property.multiplicity;
+                    elem.isStatic= property.isStatic;
+                    elem.type= property.type;
+                }
+            });
         })
 
-        let operations=[];
         classFile.methods.forEach(method=> {
-            let operation= new type.UMLOperation();
-            operation.name= method.name;
-            operation.visibility= method.visibility;
-            operation.documentation= method.comments;
-            operation.isStatic= method.isStatic;
+            let methodUml= app.factory.createModel({
+                id: "UMLOperation",
+                parent: classUml,
+                field: 'operations',
+                modelInitializer: function (elem) {
+                    elem.name= method.name;
+                    elem.visibility= method.visibility;
+                    elem.documentation= method.comments;
+                    elem.isStatic= method.isStatic;
+                }
+            });
 
-            let parameters= [];
             method.parameters.forEach(parameter=>{
-                let parameterUml= new type.UMLParameter();
-                parameterUml.name = parameter.name;
-                parameterUml.direction = parameter.direction;
-                parameterUml.type = parameter.type;
-                parameterUml.multiplicity = parameter.multiplicity;
-                parameters.push(parameterUml);
+                app.factory.createModel({
+                    id: "UMLParameter",
+                    field: 'parameters',
+                    parent: methodUml,
+                    modelInitializer: function (elem) {
+                        elem.name = parameter.name;
+                        elem.direction = parameter.direction;
+                        elem.type = parameter.type;
+                        elem.multiplicity = parameter.multiplicity;
+                    }
+                });
             });
 
             if(method.return !== undefined) {
-                let parameterUml = new type.UMLParameter();
-                parameterUml.name = method.return.name;
-                parameterUml.direction = method.return.direction;
-                parameterUml.type = method.return.type;
-                parameterUml.multiplicity = method.return.multiplicity;
-                parameters.push(parameterUml);
-            }
-
-            operation.parameters= parameters;
-            operations.push(operation)
-        })
-
-        let parent_= this.directoryPackages.findPathByPath(classFile.namespace);
-        let class2 = app.factory.createModel({
-            id: "UMLClass",
-            parent: parent_.element,
-            modelInitializer: function (elem) {
-                elem.name = classFile.name;
-                elem.isAbstract = classFile.isAbstract;
-                elem.visibility = classFile.visibility;
-                elem.documentation = classFile.comments;
-                elem.attributes= attributes;
-                elem.operations= operations;
+                app.factory.createModel({
+                    id: "UMLParameter",
+                    parent: methodUml,
+                    field: 'parameters',
+                    modelInitializer: function (elem) {
+                        elem.name = method.return.name;
+                        elem.direction = method.return.direction;
+                        elem.type = method.return.type;
+                        elem.multiplicity = method.return.multiplicity;
+                    }
+                });
             }
         });
 
+
+
+        return classUml;
+    }
+
+    findInClassesFilesByNamespaceAndClass(namespaceAndClass){
+        return this.classesFiles.find(classesFile => {
+            console.log(classesFile.namespace+'\\'+classesFile.name);
+            return classesFile.namespace+'\\'+classesFile.name === namespaceAndClass;
+        });
     }
 
 }

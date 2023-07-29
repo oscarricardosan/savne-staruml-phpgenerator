@@ -1,5 +1,5 @@
 const fs = require("fs");
-const DirectoryClasses = require("./DirectoryClasses");
+const DirectoryParentClasses = require("./DirectoryParentClasses");
 const FileClass = require("./FileClass");
 
 
@@ -27,7 +27,7 @@ class SavnePhpGenerator {
     }
 
     generateCodeFromPackage() {
-        this.directoryClasses= DirectoryClasses.new();
+        this.directoryParentClasses= DirectoryParentClasses.new();
         this.getPackage();
     }
 
@@ -75,7 +75,7 @@ class SavnePhpGenerator {
         let path= [];
         let parent= class_._parent;
         while (parent._id !== this.containerMain._parent._id){
-            let directoryPath= this.directoryClasses.findPathByParent_id(parent._id);
+            let directoryPath= this.directoryParentClasses.findPathByParent_id(parent._id);
             if(directoryPath === undefined) {
                 if(parent.visibility !== "private") path.push(parent.name);
 
@@ -85,8 +85,8 @@ class SavnePhpGenerator {
                 break;
             }
         }
-        if(this.directoryClasses.findPathByParent_id(parent._id) === undefined) {
-            this.directoryClasses.addDirectoryPath(path, class_._parent);
+        if(this.directoryParentClasses.findPathByParent_id(parent._id) === undefined) {
+            this.directoryParentClasses.addDirectoryPath(path, class_._parent);
         }
     }
 
@@ -105,13 +105,13 @@ class SavnePhpGenerator {
     }
 
     createFile(path_destination, class_){
-        let path_class= this.directoryClasses.findPathByParent_id(class_._parent._id);
+        let path_class= this.directoryParentClasses.findPathByParent_id(class_._parent._id);
         path_class= path_destination + '/' + path_class.str_path;
         if (!fs.existsSync(path_class)) {
             fs.mkdirSync(path_class, { recursive: true });
         }
 
-        let fileClass= FileClass.new(class_, this.directoryClasses);
+        let fileClass= FileClass.new(class_, this.directoryParentClasses);
         fs.writeFile(
             path_class+'/'+class_.name+'.php',
             fileClass.getContent(),
@@ -125,7 +125,7 @@ class SavnePhpGenerator {
     }
 
     generateCodeFromClass() {
-        this.directoryClasses= DirectoryClasses.new();
+        this.directoryParentClasses= DirectoryParentClasses.new();
         this.getClass();
     }
 
@@ -158,7 +158,7 @@ class SavnePhpGenerator {
     }
 
     generateCodeFromInterface() {
-        this.directoryClasses= DirectoryClasses.new();
+        this.directoryParentClasses= DirectoryParentClasses.new();
         this.getInterface();
     }
 

@@ -5,14 +5,16 @@ class DirectoryPackages {
         this.parentContainer= undefined;
     }
 
-    createPacagesFromStringArray(parentContainer, packageRoutes){
+    createPackagesFromStringArray(parentContainer, packageRoutes){
         this.parentContainer= parentContainer;
 
-        this.scanPackages();
+        this.scanPackages('', this.parentContainer);
+
 
         packageRoutes = Array.from(new Set(packageRoutes)) // Elimina duplicados
             .map(item => item.trim()) // Aplica trim a cada elemento
             .sort((a, b) => a.length - b.length); // Ordena de más corto a más largo
+
 
         packageRoutes.forEach(packageRoute=> {
 
@@ -22,52 +24,61 @@ class DirectoryPackages {
                 let pathParts= packageRoute.split('\\');
                 let pathCurrent= '';
                 let parentContainer= this.parentContainer;
-
                 while (pathParts.length>0){
                     if(pathParts.length === 1) pathCurrent+= pathParts[0];
                     else pathCurrent+= pathParts[0]+'\\';
-                    let package_= this.findPathByPath(pathCurrent);
-                    if(package_ !== undefined) continue;
+                    let package_= this.findByPath(pathCurrent);
 
-                    parentContainer= app.factory.createModel({
-                        id: "UMLPackage",
-                        parent: parentContainer,
-                        modelInitializer: function (elem) {
-                            elem.name = pathParts[0];
-                        }
-                    });
-                    this.addPackages(pathCurrent, parentContainer);
+                    if(package_ === undefined) {
+                        parentContainer = app.factory.createModel({
+                            id: "UMLPackage",
+                            parent: parentContainer,
+                            modelInitializer: function (elem) {
+                                elem.name = pathParts[0];
+                            }
+                        });
+                        this.addPackages(pathCurrent, parentContainer);
+                    }else{
+                        parentContainer= package_.element;
+                    }
                     pathParts.splice(0, 1);
                 }
             }
         });
-        console.log(this.directoryPackages);
     }
 
     addPackages(path, packageElement){
-        this.directoryPackages.push({
-            'path': path,
-            'element': packageElement
+        if(this.findByPath(path) === undefined) {
+            path = this.polishPath(path);
+            this.directoryPackages.push({
+                'path': path,
+                'element': packageElement
+            });
+        }
+    }
+
+    scanPackages(path, parent){
+        let ownedElements= parent.ownedElements;
+        ownedElements.forEach(element => {
+            if(element.constructor.name === type.UMLPackage.name) {
+                this.addPackages(path+'\\'+element.name, element);
+                this.scanPackages(path+'\\'+element.name, element);
+            }
         });
     }
 
-    scanPackages(path){
-        let ownedElements= this.parentContainer.ownedElements;
-        ownedElements.forEach(element => {
-            if(element.constructor.name === type.UMLUMLPackage) {
-                this.directoryPackages.push({
-                    'path': path,
-                    'element': element
-                });
-                this.scanPackages(path+'\\'+element.name, element);
-            }
-        })
-    }
-
-    findPathByPath(path){
+    findByPath(path){
+        path= this.polishPath(path);
         return this.directoryPackages.find(package_ => {
             return package_.path === path;
         });
+    }
+
+    polishPath(path){
+        path= path.trim();
+        if(path.endsWith('\\')) return path.substring(0, path.length-1)
+        if(path.startsWith('\\')) return path.substring(1)
+        return path;
     }
 
 

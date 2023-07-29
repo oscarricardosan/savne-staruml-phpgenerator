@@ -7,15 +7,16 @@ class SavnePhpImporter {
 
     constructor() {
         this.classesFiles= [];
+        this.path_origin= '';
     }
 
     importerFromCode(){
-        let path_origin = app.dialogs.showOpenDialog(
+        this.path_origin = app.dialogs.showOpenDialog(
             'Select the folder where your php files will be exported', null, null,
             {properties: ['openFile', 'openDirectory']}
         )[0];
-        this.listFiles(path_origin);
-
+        this.listFiles(this.path_origin);
+        console.log(this.classesFiles);
         let creatorClassesUml= CreatorClassesUml.new(
             this.classesFiles
         );
@@ -29,6 +30,9 @@ class SavnePhpImporter {
             const pathElement = path+'/'+element;
             const attributes = fs.statSync(pathElement);
             if (attributes.isDirectory()) {
+                if(pathElement !== this.path_origin+'/vendor') {
+                    this.listFiles(pathElement);
+                }
             } else if (attributes.isFile() && element.endsWith('.php')) {
                 this.processFile(pathElement);
             }
@@ -43,6 +47,7 @@ class SavnePhpImporter {
                 this.classesFiles.push(filePhp);
             }
         } catch (err) {
+            console.log(err);
             alert(`Error while reading the file: ${err}`);
         }
     }

@@ -4,26 +4,47 @@ class DirectoryClasses {
         this.directoryClasses= [];
     }
 
-    addDirectoryPath(path, parent_){
-        this.directoryClasses.push({
-            path: path,
-            parent_id: parent_._id,
-            str_path: path.reverse().join('/'),
-            namespace_path: path.join('\\')
-        })
+    addClass(path, class_){
+        if(path.startsWith('\\')) path= path.substring(1);
+
+        if(path === '') path= class_.name;
+        else path= path+'\\'+class_.name
+
+        if(this.findByPath(path) === undefined) {
+            this.directoryClasses.push({
+                path: path,
+                class_: class_
+            })
+        }
     }
 
-    findPathByParent_id(parent_id){
-        return this.directoryClasses.find(path => {
-            return path.parent_id === parent_id;
+    findByPath(path){
+        path= this.polishPath(path);
+        return this.directoryClasses.find(class_ => {
+            return class_.path === path;
         });
     }
 
-    getDirectory(parent_id){
+    scanClasses(parentElement, path){
+        let ownedElements= parentElement.ownedElements;
+        ownedElements.forEach(element => {
+            if(element.constructor.name === type.UMLClass.name || element.constructor.name === type.UMLInterface.name) {
+                this.addClass(path, element);
+            }
+            if(element.constructor.name === type.UMLPackage.name || element.constructor.name === type.UMLModel.name) {
+                this.scanClasses(element, path+'\\'+element.name);
+            }
+        })
+    }
+
+    getDirectory(){
         return this.directoryClasses;
     }
 
-
+    polishPath(path){
+        if(path.endsWith('\\')) return path.substring(0, path.length-1)
+        return path;
+    }
 
 }
 

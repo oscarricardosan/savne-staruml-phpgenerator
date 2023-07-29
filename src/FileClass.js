@@ -1,8 +1,8 @@
 class FileClass {
 
-    constructor(class_, directoryClasses) {
+    constructor(class_, directoryParentClasses) {
         this.class_= class_;
-        this.directoryClasses= directoryClasses;
+        this.directoryParentClasses= directoryParentClasses;
         this.isInterface= this.class_.constructor.name === type.UMLInterface.name;
         this.isNormalClass= this.class_.constructor.name === type.UMLClass.name;
         this.isAbstractClass= this.class_.isAbstract;
@@ -51,14 +51,14 @@ class FileClass {
     }
 
     addUse(class_target){
-        let path= this.directoryClasses.findPathByParent_id(class_target._parent._id);
+        let path= this.directoryParentClasses.findPathByParent_id(class_target._parent._id);
 
         if(class_target._parent._id !== this.class_._parent._id)
             this.uses.push('use '+path.namespace_path+'\\'+class_target.name+';');
     }
 
     getContent() {
-        let path= this.directoryClasses.findPathByParent_id(this.class_._parent._id);
+        let path= this.directoryParentClasses.findPathByParent_id(this.class_._parent._id);
 
         this.resolveImplement();
         this.resolveAssociations();

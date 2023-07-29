@@ -7,8 +7,8 @@ class PhpFileImporter {
         this.name = '';
         this.namespace = '\\';
         this.typeClass = undefined;
-        this.implements = undefined;
-        this.extends = undefined;
+        this.implements = [];
+        this.extends = [];
         this.uses = [];
         this.methods = [];
         this.properties = [];
@@ -31,7 +31,10 @@ class PhpFileImporter {
         this.extractNamespace();
         this.extractUses();
         this.determineTypeClass();
-        if(this.typeClass === undefined)return;
+        if(this.typeClass === undefined) {
+            this.isValidPhp_= false;
+            return;
+        }
         this.removeKeysOpenAndClose();
         this.extractClassMethods();
         this.extractProperties();
@@ -84,9 +87,43 @@ class PhpFileImporter {
             let use_= use[1].replace('use ', '');
             use_= use_.replace(';', '');
             use_= use_.trim();
-            this.uses.push(use_);
+            use_= use_.split(' as ');
+
+            let alias= '';
+            let namespace= '';
+            if(use_.length > 1) {
+                alias =  use_[1].trim();
+                namespace = use_[0].trim();
+            }else{
+                let parts= use_[0].split("\\");
+                alias= parts[parts.length-1];
+                namespace= use_[0].trim();
+            }
+
+            if(!namespace.includes(',') && !namespace.includes(' ')) {
+                this.addUse(alias,namespace);
+            }else{
+                console.log(namespace);
+            }
+
             this.lines.splice(use[0], 1);
         })
+    }
+
+    addUse(alias, namespace){
+        namespace= namespace.trim();
+        if(namespace.startsWith("\\")) namespace= namespace.substring(1)
+        this.uses.push({
+            alias: alias,
+            namespace: namespace,
+        });
+    }
+
+    findUseByAlias(namespace){
+        if(namespace.startsWith("\\")) namespace= namespace.substring(1)
+        return this.uses.find(use => {
+            return use.alias === namespace;
+        });
     }
 
     determineTypeClass(){
@@ -114,18 +151,51 @@ class PhpFileImporter {
         if(indexTypeClass === undefined) return false;
 
         for (let i=3; i--; i>=0){
+            let implementCounter= 0;
+            let extendCounter= 0;
             let line_id= indexTypeClass+i;
             let line= this.lines[line_id];
-            let implementMatch = line.match(/implements (\w+)/);
-            if(implementMatch !== null){
-                this.implements= implementMatch[1];
-            }
-            let extendMatch = line.match(/extends (\w+)/);
-            if(extendMatch !== null){
-                this.extends= extendMatch[1];
+
+            if(line === undefined)break;
+
+            if(line.includes(" implements ")){
+                let parts= line.replace(' extends ', ' implements ').split(" implements ");
+                let implemets= parts[1].split(',');
+                let self= this;
+                implemets.forEach(function(implemet){
+                    implemet= implemet.trim();
+                    let usetemp= self.findUseByAlias(implemet);
+                    if(usetemp !== undefined) {
+                        self.implements.push(usetemp.namespace);
+                    }else{
+                        parts= implemet.split(" ");
+                        self.implements.push(parts[0].trim());
+                    }
+                    implementCounter++;
+                });
             }
 
-            if((implementMatch !== null || extendMatch !== null) && i !== 0){
+            if(line.includes(" extends ")){
+                let parts= line.replace(' implements ', ' extends ').split(" extends ");
+                let extens= parts[1].split(',');
+                let self= this;
+                extens.forEach(function(extend){
+                    extend= extend.trim();
+                    let usetemp= self.findUseByAlias(extend);
+                    if(usetemp !== undefined) {
+                        self.extends.push(usetemp.namespace);
+                    }else{
+                        parts= extend.split(" ");
+                        if(parts[0].trim().startsWith('\\')) {
+                            self.extends.push(parts[0].trim());
+                        }else{
+                            self.extends.push(self.namespace+'\\'+parts[0].trim());
+                        }
+                    }
+                    extendCounter++;
+                });
+            }
+            if((implementCounter > 0 || extendCounter > 0) && i !== 0){
                 this.lines.splice(line_id, 1);
             }
         }
@@ -159,6 +229,7 @@ class PhpFileImporter {
         let indexLine= 0;
         do{
             let line= this.lines[indexLine];
+            if(line === undefined) break;
             if(line.includes(' function ')){
                 openFunction= true;
                 indexLine++;
@@ -222,14 +293,15 @@ class PhpFileImporter {
         let indexLine= 0;
         do{
             let line= this.lines[indexLine];
-            if(!line.startsWith('*') && line.includes('function ') && line.endsWith('{')){
+            if(line === undefined) break;
+            if(
+                !line.startsWith('*') && line.includes('function ') && line.endsWith('{')
+            ){
                 let method= Object.assign({}, newMethod);
                 method.parameters= [];
                 let return_parts= line.split(':');
                 if(return_parts.length > 1) return_parts[1];
                 let functionHeadParts= return_parts[0].split('(');
-                method.parameters= this.extractParameters(line);
-                method.return= this.extractReturnOfSignatory(line);
                 let functionSignatory= functionHeadParts[0].split(' ');
                 if(functionSignatory[0] === 'function'){
                     method.visibility= 'public';
@@ -279,8 +351,13 @@ class PhpFileImporter {
                         method.isStatic= true;
                         method.name= functionSignatory[4];
                     }
-
                 }
+                if(method.name === ''){
+                    indexLine++;
+                    continue;
+                }
+                method.parameters= this.extractParameters(line);
+                method.return= this.extractReturnOfSignatory(line);
                 this.lines.splice(indexLine, 1);
 
                 line= this.lines[indexLine];
@@ -294,12 +371,36 @@ class PhpFileImporter {
                             break;
                         }
                         if(line.includes('@param ')){
-                            let line_parts= line.split('@param ');
-                            method.parameters.push(line_parts[1]);
+                            if(this.name === 'Authenticate') {
+                                let lineParts= line.split('@param');
+                                lineParts[1]= lineParts[1].trim();
+                                lineParts[1]= lineParts[1].replaceAll('   ', ' ');
+                                lineParts[1]= lineParts[1].replaceAll('  ', ' ');
+                                lineParts= lineParts[1].split(' ');
+                                let paramName= '';
+                                let paramType= '';
+                                // console.log(lineParts);
+                                if(lineParts[0].startsWith('$')) {
+                                    paramName= lineParts[0].replace('$', '');
+                                }
+                                if(lineParts.length> 1 && lineParts[1].startsWith('$')) {
+                                    paramName= lineParts[1].replace('$', '');
+                                    paramType= lineParts[0].trim();
+                                }
+
+                                if(paramName !== '' && paramType !== ''){
+                                    let param= method.parameters.find(param => {
+                                        return param.name === paramName;
+                                    });
+                                    if(param !== undefined && param.type === ''){
+                                        param.type= paramType;
+                                    }
+                                }
+                            }
                         }
                         else if(line.includes('@return ')){
-                            let line_parts= line.split('@return ');
-                            method.return= this.extractReturnOfSignatory(':'+line_parts[1]);
+                            let lineParts= line.split('@return ');
+                            method.return= this.extractReturnOfSignatory(':'+lineParts[1]);
                         }
                         else if(!line.includes('@throws')){
                             if(
@@ -365,6 +466,7 @@ class PhpFileImporter {
         let indexLine= 0;
         do{
             let line= this.lines[indexLine];
+            if(line === undefined) break;
             if(line.includes('$') && line.endsWith(';')){
                 let property= Object.assign({}, newProperty);
                 let property_parts= line.split('=');
@@ -549,7 +651,7 @@ class PhpFileImporter {
 
     extractReturnOfSignatory(signatory){
         let newReturn= {
-            'name': '',
+            'name': 'return',
             'direction': 'return',
             'multiplicity': 1,
             'type': '',
@@ -572,6 +674,10 @@ class PhpFileImporter {
             else
                 newReturn.multiplicity= '1';
         }
+        if(newReturn.type === 'void')
+            newReturn.multiplicity= '0';
+        else if(newReturn.type.includes('|null|') || newReturn.type.startsWith('null|') || newReturn.type.endsWith('|null'))
+            newReturn.multiplicity= '0..1';
 
         return newReturn;
 
