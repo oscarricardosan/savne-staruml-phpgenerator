@@ -70,8 +70,13 @@ class CreatorClassesUml {
             let parent
             if(parent_ !== undefined)
                 parent = parent_.element
-            else
-                parent = app.repository.select("@Project")[0]
+            else{
+                parent = app.repository.select("@Project")[0].ownedElements[0]
+
+                let searchClass = parent.ownedElements.find(element => element.name === classFile.name)
+                if(searchClass !== undefined) return searchClass
+            }
+
             classUml= app.factory.createModel({
                 id: classUml,
                 parent: parent,
