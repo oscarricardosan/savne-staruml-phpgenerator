@@ -8,6 +8,7 @@ class SavnePhpImporter {
     constructor() {
         this.classesFiles= [];
         this.path_origin= '';
+        this.importVendor= '';
     }
 
     importerFromCode(){
@@ -15,8 +16,33 @@ class SavnePhpImporter {
             'Select the folder where your php files will be exported', null, null,
             {properties: ['openFile', 'openDirectory']}
         )[0];
-        this.listFiles(this.path_origin);
-        console.log(this.classesFiles);
+
+        var options = [
+            { text: "No", value: false },
+            { text: "Yes", value: true },
+        ]
+        let self = this
+        app.dialogs.showSelectRadioDialog("Do you want to import Vendor?", options).then(function ({buttonId, returnValue}) {
+            if (buttonId === 'ok') {
+                console.log(returnValue)
+                self.importVendor = returnValue
+                self.listFiles(self.path_origin);
+                // console.log(self.classesFiles);
+                let creatorClassesUml= CreatorClassesUml.new(
+                    self.classesFiles
+                );
+                creatorClassesUml.exec();
+            }
+        })
+    }
+
+    importerFromClass(){
+        this.path_origin = app.dialogs.showOpenDialog(
+            'Select the class to import', null, null,
+            {name: "Text Files", extensions: [ "php" ]}
+        )[0];
+
+        this.processFile(this.path_origin);
         let creatorClassesUml= CreatorClassesUml.new(
             this.classesFiles
         );
@@ -28,9 +54,12 @@ class SavnePhpImporter {
 
         elements.forEach(element=> {
             const pathElement = path+'/'+element;
+            console.log(path+'/'+element)
             const attributes = fs.statSync(pathElement);
             if (attributes.isDirectory()) {
-                if(pathElement !== this.path_origin+'/vendor') {
+                if(this.importVendor==="true")
+                    this.listFiles(pathElement)
+                else if(pathElement !== this.path_origin+'/vendor'){
                     this.listFiles(pathElement);
                 }
             } else if (attributes.isFile() && element.endsWith('.php')) {
@@ -55,6 +84,7 @@ class SavnePhpImporter {
 
     init() {
         app.commands.register("Savne-PhpImporter:FromCode", this.importerFromCode.bind(this));
+        app.commands.register("Savne-PhpImporter:FromClass", this.importerFromClass.bind(this));
     }
 }
 

@@ -641,7 +641,9 @@ class PhpFileImporter {
                 else parameter.multiplicity= '0..1';
             }
             else{
-                parameter.name= parts[1].replace('$', '');
+                if(parts.length>1) {
+                    parameter.name= parts[1].replace('$', '');
+                }
                 parameter.type= parts[0];
                 parameter.multiplicity= '1';
             }

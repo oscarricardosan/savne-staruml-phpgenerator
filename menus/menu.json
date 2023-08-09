@@ -29,9 +29,14 @@
             },
             { "type": "separator" },
             {
-              "id": "SavneMenu.Php.GeneratorConfigure",
-              "label": "Test...",
+              "id": "SavneMenu.Php.ImporterFromCode",
+              "label": "Import",
               "command": "Savne-PhpImporter:FromCode"
+            },
+            {
+              "id": "SavneMenu.Php.ImporterFromClass",
+              "label": "Import Class",
+              "command": "Savne-PhpImporter:FromClass"
             }
           ]
         }
