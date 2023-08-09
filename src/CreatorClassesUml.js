@@ -137,6 +137,9 @@ class CreatorClassesUml {
             });
 
             method.parameters.forEach(parameter=>{
+                let parameterClass
+                if(parameter.namespace)
+                    parameterClass= this.findInClassesFilesByNamespaceAndClass(parameter.namespace, parameter.type)
                 app.factory.createModel({
                     id: "UMLParameter",
                     field: 'parameters',
@@ -144,7 +147,7 @@ class CreatorClassesUml {
                     modelInitializer: function (elem) {
                         elem.name = parameter.name;
                         elem.direction = parameter.direction;
-                        elem.type = parameter.type;
+                        elem.type = parameterClass ?? parameter.type;
                         elem.multiplicity = parameter.multiplicity;
                     }
                 });
@@ -159,7 +162,7 @@ class CreatorClassesUml {
                     parent: methodUml,
                     field: 'parameters',
                     modelInitializer: function (elem) {
-                        elem.name = method.return.name+"_"+method.return.type;
+                        elem.name = method.return.name;
                         elem.direction = method.return.direction;
                         elem.type = returnClass ?? method.return.type;
                         elem.multiplicity = method.return.multiplicity;

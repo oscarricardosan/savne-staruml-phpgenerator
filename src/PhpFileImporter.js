@@ -611,6 +611,7 @@ class PhpFileImporter {
             'multiplicity': 1,
             'defaultValue': '',
             'type': '',
+            'namespace': '',
         };
 
         let parts= signatory.split(')');
@@ -644,6 +645,11 @@ class PhpFileImporter {
                 parameter.type= parts[0];
                 parameter.multiplicity= '1';
             }
+
+            parameter.type = parameter.type.trim()
+
+            parameter.namespace = this.getNamespaceByClassName(parameter.type)
+            console.log(parameter)
             parameters.push(parameter);
         });
         return parameters;
@@ -682,13 +688,18 @@ class PhpFileImporter {
 
         newReturn.type = newReturn.type.trim()
 
-        let typeNamespace = this.uses.find(use=> use.alias === newReturn.type)
-        if(typeNamespace !== undefined) {
-            let startIndex = typeNamespace.namespace.indexOf("\\"+newReturn.type);
-            newReturn.namespace = typeNamespace.namespace.substring(0, startIndex)
-        }
+        newReturn.namespace = this.getNamespaceByClassName(newReturn.type)
         return newReturn;
 
+    }
+
+    getNamespaceByClassName(className) {
+        let typeNamespace = this.uses.find(use=> use.alias === className)
+        if(typeNamespace) {
+            let startIndex = typeNamespace.namespace.indexOf("\\"+className);
+            return typeNamespace.namespace.substring(0, startIndex)
+        }
+        return ''
     }
 
 }
