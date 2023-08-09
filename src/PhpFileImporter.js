@@ -655,6 +655,7 @@ class PhpFileImporter {
             'direction': 'return',
             'multiplicity': 1,
             'type': '',
+            'namespace': '',
         };
         signatory= signatory.replace('{', '');
         let parts= signatory.split(':');
@@ -679,6 +680,13 @@ class PhpFileImporter {
         else if(newReturn.type.includes('|null|') || newReturn.type.startsWith('null|') || newReturn.type.endsWith('|null'))
             newReturn.multiplicity= '0..1';
 
+        newReturn.type = newReturn.type.trim()
+
+        let typeNamespace = this.uses.find(use=> use.alias === newReturn.type)
+        if(typeNamespace !== undefined) {
+            let startIndex = typeNamespace.namespace.indexOf("\\"+newReturn.type);
+            newReturn.namespace = typeNamespace.namespace.substring(0, startIndex)
+        }
         return newReturn;
 
     }

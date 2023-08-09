@@ -67,9 +67,14 @@ class CreatorClassesUml {
             if(classFile.typeClass === 'Interface') classUml= "UMLInterface";
             else classUml= "UMLClass";
 
+            let parent
+            if(parent_ !== undefined)
+                parent = parent_.element
+            else
+                parent = app.repository.select("@Project")[0]
             classUml= app.factory.createModel({
                 id: classUml,
-                parent: parent_.element,
+                parent: parent,
                 modelInitializer: function (elem) {
                     elem.name = classFile.name;
                     elem.isAbstract = classFile.isAbstract;
@@ -146,14 +151,17 @@ class CreatorClassesUml {
             });
 
             if(method.return !== undefined) {
+                let returnClass
+                if(method.return.namespace)
+                    returnClass= this.findInClassesFilesByNamespaceAndClass(method.return.namespace, method.return.type)
                 app.factory.createModel({
                     id: "UMLParameter",
                     parent: methodUml,
                     field: 'parameters',
                     modelInitializer: function (elem) {
-                        elem.name = method.return.name;
+                        elem.name = method.return.name+"_"+method.return.type;
                         elem.direction = method.return.direction;
-                        elem.type = method.return.type;
+                        elem.type = returnClass ?? method.return.type;
                         elem.multiplicity = method.return.multiplicity;
                     }
                 });
@@ -165,11 +173,24 @@ class CreatorClassesUml {
         return classUml;
     }
 
-    findInClassesFilesByNamespaceAndClass(namespaceAndClass){
-        return this.classesFiles.find(classesFile => {
-            console.log(classesFile.namespace+'\\'+classesFile.name);
-            return classesFile.namespace+'\\'+classesFile.name === namespaceAndClass;
-        });
+    findInClassesFilesByNamespaceAndClass(namespace, className){
+        let returnClass = this.directoryClasses.findByPath(namespace+'\\'+className);
+        if(returnClass === undefined) {
+            let classFile = {
+                isValidPhp_ : true,
+                pathFile : '',
+                name : className,
+                namespace : namespace,
+                typeClass : 'public',
+                implements : [],
+                properties : [],
+                methods : [],
+            }
+            returnClass = this.createClass(classFile)
+        }else{
+            returnClass = returnClass.class_
+        }
+        return returnClass
     }
 
 }
