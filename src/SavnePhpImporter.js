@@ -24,10 +24,8 @@ class SavnePhpImporter {
         let self = this
         app.dialogs.showSelectRadioDialog("Do you want to import Vendor?", options).then(function ({buttonId, returnValue}) {
             if (buttonId === 'ok') {
-                console.log(returnValue)
                 self.importVendor = returnValue
                 self.listFiles(self.path_origin);
-                // console.log(self.classesFiles);
                 let creatorClassesUml= CreatorClassesUml.new(
                     self.classesFiles
                 );
@@ -54,7 +52,6 @@ class SavnePhpImporter {
 
         elements.forEach(element=> {
             const pathElement = path+'/'+element;
-            console.log(path+'/'+element)
             const attributes = fs.statSync(pathElement);
             if (attributes.isDirectory()) {
                 if(this.importVendor==="true")
