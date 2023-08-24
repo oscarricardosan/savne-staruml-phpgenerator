@@ -273,6 +273,7 @@ class PhpFileImporter {
         let tempLines= this.lines.join(' ');
         tempLines= tempLines.replaceAll(';', ";\n");
         tempLines= tempLines.replaceAll('{', "{\n");
+        tempLines= tempLines.replaceAll('}', "}\n");
         tempLines= tempLines.replaceAll('/**', "\n/**\n");
         tempLines= tempLines.replaceAll('*/', "\n*/\n");
         tempLines= tempLines.replaceAll('* ', "\n* ");
