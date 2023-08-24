@@ -12,6 +12,7 @@ class SavnePhpImporter {
     }
 
     importerFromCode(){
+        this.classesFiles= []
         this.path_origin = app.dialogs.showOpenDialog(
             'Select the folder where your php files will be exported', null, null,
             {properties: ['openFile', 'openDirectory']}
@@ -35,6 +36,7 @@ class SavnePhpImporter {
     }
 
     importerFromClass(){
+        this.classesFiles= []
         this.path_origin = app.dialogs.showOpenDialog(
             'Select the class to import', null, null,
             {name: "Text Files", extensions: [ "php" ]}
