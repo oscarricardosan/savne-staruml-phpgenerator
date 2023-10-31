@@ -132,5 +132,20 @@ The type of relationship implemented will influence the code as follows:
 
 ## PHP Importer
 
----
+The PHP Importer tool generates a class diagram based on an existing php project.
 
+### USE
+
+Import a project: This option imports the classes, interfaces, data types, relationships and folder structure based on an existing project.
+
+1. Click on the menu Tools/Savne PHP/Import.
+2. Select the project you want to import.
+3. Select the starUML package where you want to import the project.
+4. Wait until the project is imported (It may take a while).
+
+Import a class: this option only imports a class with its directory structure. 
+
+1. Click on the menu Tools/Savne PHP/Import Class.
+2. Select the class you want to import.
+3. Select the StartUML package where you want to import the class.
+4. Wait until the class is imported.
